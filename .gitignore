@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local
+.env.example
+
+# Turbo
+.turbo/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+
+# Claude / AI tooling
+.claude/
+CLAUDE.md
+COWORK.md
+.claude.json
+.mcp.json
+
+# Design mockups & references (all top-level folders except apps/ and packages/)
+/add_shift_desktop_dark/
+/add_shift_desktop_light/
+/bus_times_desktop_dark/
+/bus_times_desktop_light/
+/dashboard_desktop_dark/
+/dashboard_desktop_light/
+/history_desktop_dark/
+/history_desktop_light/
+/home_desktop_dark/
+/home_desktop_light/
+/import_desktop_dark/
+/import_desktop_light/
+/settings_desktop_dark/
+/settings_desktop_light/
+/shiftmate_precision/
+
+# TypeORM migrations compiled
+apps/api/src/database/migrations/*.js
+apps/api/src/database/migrations/*.js.map
+
+# Test coverage
+coverage/
