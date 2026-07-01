@@ -1,4 +1,4 @@
-import { parseCsv, parseImportCsv } from './import.service';
+import { parseCsv, parseImportCsv, normalizeDate, normalizeTime } from './import.service';
 
 describe('parseCsv', () => {
   it('splits simple rows and columns', () => {
@@ -58,5 +58,48 @@ describe('parseImportCsv', () => {
   it('accepts a Type column as notes (spreadsheet source)', () => {
     const { rows } = parseImportCsv('Date,Start,End,Type\n2026-06-01,16:00,22:00,Kitchen');
     expect(rows[0].notes).toBe('Kitchen');
+  });
+
+  it('imports the raw timesheet export (DD/MM/YYYY, am/pm, Total rows)', () => {
+    const csv = [
+      'Date,Day,Type,Start Time,End Time,Hours,Hourly Pay (AUD),Daily Pay (AUD)',
+      '05/01/2026,Monday,FO,2:00 pm,7:00 pm,5.00,21.00,105.00',
+      '15/01/2026,Thursday,FO,8:00 am,5:00 pm,9.00,21.00,189.00',
+      ',,,,,,,',
+      ',,,,Total Hours,37.00,Fortnight Total,1008.00',
+    ].join('\r\n');
+    const { rows, errors } = parseImportCsv(csv);
+    expect(errors).toEqual([]); // total/blank rows skipped, not errored
+    expect(rows).toEqual([
+      { date: '2026-01-05', startTime: '14:00', endTime: '19:00', notes: 'FO' },
+      { date: '2026-01-15', startTime: '08:00', endTime: '17:00', notes: 'FO' },
+    ]);
+  });
+});
+
+describe('normalizeDate', () => {
+  it('passes ISO through and converts AU day/month/year', () => {
+    expect(normalizeDate('2026-01-05')).toBe('2026-01-05');
+    expect(normalizeDate('05/01/2026')).toBe('2026-01-05');
+    expect(normalizeDate('5-1-2026')).toBe('2026-01-05');
+  });
+  it('rejects impossible months and junk', () => {
+    expect(normalizeDate('01/13/2026')).toBeNull(); // month 13 (DD/MM order)
+    expect(normalizeDate('not-a-date')).toBeNull();
+  });
+});
+
+describe('normalizeTime', () => {
+  it('handles 24h and 12h am/pm', () => {
+    expect(normalizeTime('16:30')).toBe('16:30');
+    expect(normalizeTime('16:30:00')).toBe('16:30');
+    expect(normalizeTime('2:00 pm')).toBe('14:00');
+    expect(normalizeTime('8:00 am')).toBe('08:00');
+    expect(normalizeTime('12:00 pm')).toBe('12:00'); // noon
+    expect(normalizeTime('12:00 am')).toBe('00:00'); // midnight
+  });
+  it('rejects invalid times', () => {
+    expect(normalizeTime('25:00')).toBeNull();
+    expect(normalizeTime('nope')).toBeNull();
   });
 });

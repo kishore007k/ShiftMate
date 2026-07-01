@@ -65,22 +65,61 @@ export function parseImportCsv(text: string): {
   const errors: { row: number; reason: string }[] = [];
   for (let i = 1; i < table.length; i++) {
     const cells = table[i];
-    const date = (cells[col.date] ?? '').trim();
-    const startTime = (cells[col.start] ?? '').trim().slice(0, 5);
-    const endTime = (cells[col.end] ?? '').trim().slice(0, 5);
-    const notes = col.notes >= 0 ? (cells[col.notes] ?? '').trim() : '';
+    const dateRaw = (cells[col.date] ?? '').trim();
+    if (!dateRaw) continue; // separator / "Total Hours" rows have no date — skip silently
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      errors.push({ row: i + 1, reason: `Invalid date "${date}"` });
+    const date = normalizeDate(dateRaw);
+    if (!date) {
+      errors.push({ row: i + 1, reason: `Invalid date "${dateRaw}"` });
       continue;
     }
-    if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
-      errors.push({ row: i + 1, reason: 'Start/End must be HH:MM' });
+    const startTime = normalizeTime((cells[col.start] ?? '').trim());
+    const endTime = normalizeTime((cells[col.end] ?? '').trim());
+    if (!startTime || !endTime) {
+      errors.push({ row: i + 1, reason: 'Start/End must be a time (e.g. 16:30 or 4:30 pm)' });
       continue;
     }
+    const notes = col.notes >= 0 ? (cells[col.notes] ?? '').trim() : '';
     rows.push({ date, startTime, endTime, notes: notes || undefined });
   }
   return { rows, errors };
+}
+
+/** Accept YYYY-MM-DD or AU-style DD/MM/YYYY (or DD-MM-YYYY) → returns YYYY-MM-DD, else null. */
+export function normalizeDate(raw: string): string | null {
+  const s = raw.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/); // day/month/year (Australian)
+  if (m) {
+    const [, d, mo, y] = m;
+    if (+mo >= 1 && +mo <= 12 && +d >= 1 && +d <= 31) {
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+  }
+  return null;
+}
+
+/** Accept 24h "HH:MM[:SS]" or 12h "h[:mm] am/pm" → returns "HH:MM" (24h), else null. */
+export function normalizeTime(raw: string): string | null {
+  const s = raw.trim().toLowerCase();
+
+  const h24 = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (h24) {
+    const h = +h24[1];
+    return h <= 23 && +h24[2] <= 59 ? `${String(h).padStart(2, '0')}:${h24[2]}` : null;
+  }
+
+  const h12 = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/);
+  if (h12) {
+    let h = +h12[1];
+    const min = h12[2] ?? '00';
+    if (h < 1 || h > 12 || +min > 59) return null;
+    if (h12[3] === 'am') h = h === 12 ? 0 : h;
+    else h = h === 12 ? 12 : h + 12;
+    return `${String(h).padStart(2, '0')}:${min}`;
+  }
+
+  return null;
 }
 
 /** RFC-4180-ish CSV parser: handles quoted fields, escaped quotes, and CRLF/LF. */
