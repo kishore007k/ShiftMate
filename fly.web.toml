@@ -1,0 +1,29 @@
+# Fly.io config for the ShiftMate web app.
+# Deploy from the repo root:
+#   fly deploy --config fly.web.toml
+# NEXT_PUBLIC_API_BASE_URL is baked into the build — update it below if the api app
+# uses a different name than shiftmate-api.
+app = "shiftmate-web"
+primary_region = "syd"
+
+[build]
+  dockerfile = "apps/web/Dockerfile"
+
+  [build.args]
+    NEXT_PUBLIC_API_BASE_URL = "https://shiftmate-api.fly.dev"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "stop"
+  min_machines_running = 1 # keep one machine warm — no cold starts (set 0 to scale to zero and save)
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "512mb"

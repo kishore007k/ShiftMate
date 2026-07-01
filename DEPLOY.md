@@ -55,3 +55,34 @@ Re-running is safe (duplicates are reported as conflicts, not re-added).
   `docker build -f apps/api/Dockerfile -t shiftmate-api .`
   `docker build -f apps/web/Dockerfile --build-arg NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 -t shiftmate-web .`
 - `railway.toml` is left as a reference for anyone deploying to Railway instead.
+
+## Alternative: Fly.io (no cold-start sleep)
+
+Fly keeps a machine warm (`min_machines_running = 1`), so there's no ~30s wake-up like Render's
+free tier. Configs are `fly.api.toml` and `fly.web.toml`; still use Neon for Postgres.
+
+```bash
+# one-time: install flyctl and log in
+#   https://fly.io/docs/flyctl/install/   then:  fly auth login
+
+# from the repo ROOT (the Dockerfiles build with repo-root context):
+fly apps create shiftmate-api
+fly apps create shiftmate-web
+
+# api secrets (Neon URL + Maps key)
+fly secrets set --config fly.api.toml \
+  DATABASE_URL="postgresql://...neon.tech/neondb?sslmode=require" \
+  GOOGLE_MAPS_API_KEY="your-key"
+
+# deploy both
+fly deploy --config fly.api.toml
+fly deploy --config fly.web.toml
+```
+
+- URLs follow `https://<app-name>.fly.dev`. `fly.api.toml` already sets
+  `WEB_ORIGIN=https://shiftmate-web.fly.dev` and `fly.web.toml` bakes
+  `NEXT_PUBLIC_API_BASE_URL=https://shiftmate-api.fly.dev` as a build arg — edit both if you use
+  different app names.
+- `min_machines_running = 1` keeps each service warm (small cost). Set it to `0` in the toml to
+  scale to zero and pay less, at the cost of a brief wake-up.
+- Then load your shifts the same way: **Shifts → Import** → `Downloads/shiftmate-import.csv`.

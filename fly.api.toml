@@ -1,0 +1,34 @@
+# Fly.io config for the ShiftMate API.
+# Deploy from the repo root (build context = repo root, which the Dockerfile needs):
+#   fly deploy --config fly.api.toml
+# Set secrets first (not stored in this file):
+#   fly secrets set DATABASE_URL="postgresql://...@neon...?sslmode=require" GOOGLE_MAPS_API_KEY="..." --config fly.api.toml
+app = "shiftmate-api"
+primary_region = "syd" # Sydney — closest Fly region to Melbourne
+
+[build]
+  dockerfile = "apps/api/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  WEB_ORIGIN = "https://shiftmate-web.fly.dev"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "stop"
+  min_machines_running = 1 # keep one machine warm — no cold starts (set 0 to scale to zero and save)
+
+  [[http_service.checks]]
+    method = "get"
+    path = "/api/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "15s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "512mb"
