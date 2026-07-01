@@ -34,8 +34,9 @@ export function PageShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive(pathname, item.href) ? 'page' : undefined}
                   className={cn(
-                    'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+                    'rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                     isActive(pathname, item.href)
                       ? 'bg-surface-elevated text-foreground'
                       : 'text-muted hover:text-foreground',
@@ -61,8 +62,9 @@ export function PageShell({ children }: { children: React.ReactNode }) {
           <Link
             key={item.href}
             href={item.href}
+            aria-current={isActive(pathname, item.href) ? 'page' : undefined}
             className={cn(
-              'whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium',
+              'whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
               isActive(pathname, item.href)
                 ? 'bg-surface-elevated text-foreground'
                 : 'text-muted',
