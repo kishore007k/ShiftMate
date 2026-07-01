@@ -1,0 +1,40 @@
+# Render Blueprint for ShiftMate — https://render.com/docs/blueprint-spec
+#
+# Postgres is external (Neon, persistent free tier). Set DATABASE_URL on the api
+# service to your Neon connection string, including ?sslmode=require.
+#
+# Cross-service URLs are baked/needed at build time, so they're `sync: false`
+# (you enter them when creating the Blueprint). Render's default hostnames follow
+# https://<service-name>.onrender.com — if a name is taken, Render adds a suffix
+# and you adjust the two URL vars afterwards, then redeploy the web service.
+services:
+  - type: web
+    name: shiftmate-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    plan: free
+    region: singapore
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Neon connection string (must include ?sslmode=require)
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false # https://shiftmate-web.onrender.com
+
+  - type: web
+    name: shiftmate-web
+    runtime: docker
+    dockerfilePath: ./apps/web/Dockerfile
+    dockerContext: .
+    plan: free
+    region: singapore
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_BASE_URL
+        sync: false # https://shiftmate-api.onrender.com  (baked into the web build)

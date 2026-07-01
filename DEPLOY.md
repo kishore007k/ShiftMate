@@ -1,64 +1,57 @@
-# Deploying ShiftMate to Railway
+# Deploying ShiftMate (Render + Neon)
 
-ShiftMate is a pnpm monorepo with two deployable services — the **api** (NestJS) and the
-**web** (Next.js) — plus a **Postgres** database. Each service builds from its own Dockerfile
-with the **repo root** as the build context. The api runs its DB migrations automatically on
-boot (`migrationsRun: true`), so there is no manual migration step.
+ShiftMate is a pnpm monorepo with two Docker services — the **api** (NestJS) and the **web**
+(Next.js) — plus a **Postgres** database. The api runs its migrations automatically on boot
+(`migrationsRun: true`), so there's no manual migration step.
 
-Prerequisites: the repo is pushed to GitHub (`github.com/kishore007k/ShiftMate`) and you have a
-Railway account.
+We host the two services on **Render** (via the `render.yaml` Blueprint) and Postgres on
+**Neon** (its free tier is persistent, unlike most platform-bundled free databases).
 
-## 1. Create the project + database
+Prerequisites: the repo is on GitHub (`github.com/kishore007k/ShiftMate`), plus free Render and
+Neon accounts.
 
-1. Railway → **New Project** → **Deploy from GitHub repo** → pick `ShiftMate`.
-2. In the project, **+ New** → **Database** → **Add PostgreSQL**.
+## 1. Create the database (Neon)
 
-## 2. Deploy the **api** service
+1. [neon.tech](https://neon.tech) → **New Project** (pick a region near you, e.g. Singapore/AU).
+2. Copy the **connection string** from the dashboard. It looks like:
+   `postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require`
+   Keep the `?sslmode=require` — the api enables SSL when `NODE_ENV=production`.
 
-1. The first service Railway created from the repo will be the api (or **+ New → GitHub Repo**).
-2. Service **Settings**:
-   - **Root Directory**: `/`
-   - **Dockerfile Path**: `apps/api/Dockerfile` (or add a variable `RAILWAY_DOCKERFILE_PATH=apps/api/Dockerfile`)
-3. **Variables**:
-   | Key | Value |
-   |-----|-------|
-   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
-   | `GOOGLE_MAPS_API_KEY` | your Google Maps key |
-   | `NODE_ENV` | `production` |
-   | `WEB_ORIGIN` | `https://${{web.RAILWAY_PUBLIC_DOMAIN}}` (set after the web service exists) |
-4. **Settings → Networking → Generate Domain** to expose it publicly.
+## 2. Deploy both services (Render Blueprint)
 
-Do **not** set `PORT` — Railway injects it and the app binds to it automatically.
+1. [render.com](https://render.com) → **New** → **Blueprint** → connect the `ShiftMate` repo.
+   Render reads `render.yaml` and proposes the `shiftmate-api` and `shiftmate-web` services.
+2. Render prompts for the `sync: false` variables. Enter:
+   | Service | Variable | Value |
+   |---------|----------|-------|
+   | api | `DATABASE_URL` | your Neon string (with `?sslmode=require`) |
+   | api | `GOOGLE_MAPS_API_KEY` | your Google Maps key |
+   | api | `WEB_ORIGIN` | `https://shiftmate-web.onrender.com` |
+   | web | `NEXT_PUBLIC_API_BASE_URL` | `https://shiftmate-api.onrender.com` |
+3. **Apply** — Render builds both Docker images and deploys.
 
-## 3. Deploy the **web** service
+> `NEXT_PUBLIC_API_BASE_URL` is **baked into the web build**, and `WEB_ORIGIN` sets the api's
+> CORS allow-list (`apps/api/src/main.ts`). Both use Render's default hostname pattern
+> `https://<service-name>.onrender.com`.
 
-1. **+ New → GitHub Repo → ShiftMate** (a second service on the same repo).
-2. Service **Settings**:
-   - **Root Directory**: `/`
-   - **Dockerfile Path**: `apps/web/Dockerfile`
-3. **Variables** (⚠️ `NEXT_PUBLIC_*` is baked in at build time — set it before the first build):
-   | Key | Value |
-   |-----|-------|
-   | `NEXT_PUBLIC_API_BASE_URL` | `https://${{api.RAILWAY_PUBLIC_DOMAIN}}` |
-   | `NODE_ENV` | `production` |
-4. **Generate Domain** for the web service.
+## 3. If a service name was taken
 
-## 4. Wire CORS and redeploy
+Render appends a suffix (e.g. `shiftmate-api-ab12`). If so, update the two URL variables to the
+real hostnames (**api → Settings → Environment**: `WEB_ORIGIN`; **web**:
+`NEXT_PUBLIC_API_BASE_URL`) and **redeploy the web service** so the corrected API URL is baked in.
 
-1. Back on the **api** service, confirm `WEB_ORIGIN` = `https://<web-domain>` (from step 3.4).
-   The api only allows that origin (`apps/api/src/main.ts`).
-2. Redeploy both services if you changed variables (the web must rebuild to pick up
-   `NEXT_PUBLIC_API_BASE_URL`).
+## 4. Load your historical shifts
 
-## 5. Load your historical shifts
-
-Open the deployed web app → **Shifts → Import** → upload
-`Downloads/shiftmate-import.csv`. Re-running is safe (duplicates are reported as conflicts).
+Open the deployed web app → **Shifts → Import** → upload `Downloads/shiftmate-import.csv`.
+Re-running is safe (duplicates are reported as conflicts, not re-added).
 
 ## Notes
 
-- `railway.toml` in the repo is a human reference for the settings above; Railway configures
-  multi-service monorepos through the dashboard (per-service Dockerfile path), not a single
-  config file.
-- Verify locally: `docker build -f apps/api/Dockerfile -t shiftmate-api .` and
+- **Free web services sleep** after ~15 min idle and cold-start in ~30s on the next request —
+  fine for personal use. Upgrade a service to a paid instance to keep it always-on.
+- **Ports**: don't set `PORT`. Render injects it; Nest reads `process.env.PORT` and Next's
+  `next start` binds to it automatically.
+- **Verify the images locally** (Docker):
+  `docker build -f apps/api/Dockerfile -t shiftmate-api .`
   `docker build -f apps/web/Dockerfile --build-arg NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 -t shiftmate-web .`
+- `railway.toml` is left as a reference for anyone deploying to Railway instead.
