@@ -1,22 +1,23 @@
-[[services]]
-  name = "api"
-  source = "apps/api"
-  build_command = "pnpm --filter @shiftmate/api build"
-  start_command = "node dist/main.js"
-
-  [services.variables]
-    PORT = "3000"
-    NODE_ENV = "production"
-    DATABASE_URL = "${{Postgres.DATABASE_URL}}"
-    GOOGLE_MAPS_API_KEY = "${{GOOGLE_MAPS_API_KEY}}"
-
-[[services]]
-  name = "web"
-  source = "apps/web"
-  build_command = "pnpm --filter @shiftmate/web build"
-  start_command = "pnpm --filter @shiftmate/web start"
-
-  [services.variables]
-    PORT = "8080"
-    NODE_ENV = "production"
-    NEXT_PUBLIC_API_BASE_URL = "${{api.RAILWAY_PUBLIC_DOMAIN}}"
+# ShiftMate — Railway deploy reference
+#
+# Railway builds each service from its Dockerfile. In one Railway project, create
+# a Postgres plugin plus TWO services (both from this GitHub repo). For each
+# service set Root Directory = "/" (repo root) and the Dockerfile Path below, then
+# add the variables listed. Do NOT set PORT manually — Railway injects it and each
+# app binds to it (Nest reads process.env.PORT; Next's `next start` respects it).
+#
+# Full step-by-step: see DEPLOY.md
+#
+# ── Service: api ──────────────────────────────────────────────────────────────
+#   Dockerfile Path: apps/api/Dockerfile   (RAILWAY_DOCKERFILE_PATH=apps/api/Dockerfile)
+#   Variables:
+#     DATABASE_URL        = ${{Postgres.DATABASE_URL}}
+#     GOOGLE_MAPS_API_KEY = <your Google Maps key>
+#     NODE_ENV            = production
+#     WEB_ORIGIN          = https://${{web.RAILWAY_PUBLIC_DOMAIN}}
+#
+# ── Service: web ──────────────────────────────────────────────────────────────
+#   Dockerfile Path: apps/web/Dockerfile   (RAILWAY_DOCKERFILE_PATH=apps/web/Dockerfile)
+#   Variables (NEXT_PUBLIC_* is baked at build time, so set it before first deploy):
+#     NEXT_PUBLIC_API_BASE_URL = https://${{api.RAILWAY_PUBLIC_DOMAIN}}
+#     NODE_ENV                 = production
