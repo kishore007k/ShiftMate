@@ -89,7 +89,7 @@ function ShiftGroup({ title, shifts }: { title: string; shifts: Shift[] }) {
       <h2 className="mb-3 font-display text-xl font-semibold">{title}</h2>
       <div className="space-y-4">
         {shifts.map((s) => (
-          <Link key={s.id} href={`/shifts/${s.id}`}>
+          <Link key={s.id} href={`/shifts/${s.id}`} className="block">
             <Card className="flex items-center justify-between transition-transform hover:scale-[0.995]">
               <div>
                 <p className="font-medium">{s.notes || 'Shift'}</p>
