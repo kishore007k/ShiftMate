@@ -13,13 +13,36 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix('api');
 
+  // Explicit allowlist (WEB_ORIGIN may be a comma-separated list; trailing slashes ignored).
+  const allowlist = [
+    'http://localhost:3001',
+    ...config
+      .get<string>('WEB_ORIGIN', '')
+      .split(',')
+      .map((o) => o.trim().replace(/\/+$/, ''))
+      .filter(Boolean),
+  ];
+  // Deploy-platform subdomains are allowed too, so a missing/mistyped WEB_ORIGIN doesn't
+  // hard-block the app (data is still scoped by the x-device-id header, not cookies).
+  const allowedHostPatterns = [/\.onrender\.com$/, /\.fly\.dev$/, /\.vercel\.app$/];
+
   app.enableCors({
-    origin: [
-      'http://localhost:3001',
-      config.get<string>('WEB_ORIGIN', 'http://localhost:3001'),
-    ],
+    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
+      if (!origin) return cb(null, true); // non-browser / same-origin requests
+      let host = '';
+      try {
+        host = new URL(origin).hostname;
+      } catch {
+        /* malformed origin */
+      }
+      const ok =
+        allowlist.includes(origin.replace(/\/+$/, '')) ||
+        allowedHostPatterns.some((re) => re.test(host));
+      cb(null, ok);
+    },
     credentials: true,
   });
+  logger.log(`CORS allowlist: ${allowlist.join(', ')} (+ *.onrender.com, *.fly.dev, *.vercel.app)`);
 
   app.useGlobalPipes(
     new ValidationPipe({
