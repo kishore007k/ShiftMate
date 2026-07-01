@@ -26,7 +26,8 @@ export function PageShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-8">
-            <Link href="/" className="font-display text-xl font-bold text-primary">
+            <Link href="/" className="flex items-center gap-2 font-display text-xl font-bold text-primary">
+              <img src="/logo.png" alt="" className="h-7 w-7" />
               ShiftMate
             </Link>
             <nav className="hidden items-center gap-1 md:flex">

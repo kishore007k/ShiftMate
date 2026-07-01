@@ -42,10 +42,11 @@ export default function ShiftsPage() {
   }
 
   const today = todayISO();
+  const fortnightAgo = new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10);
   const upcoming = shifts
     .filter((s) => s.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
-  const past = shifts.filter((s) => s.date < today); // already DESC from the API
+  const past = shifts.filter((s) => s.date < today && s.date >= fortnightAgo); // already DESC from the API
 
   return (
     <div className="space-y-8">
@@ -86,7 +87,7 @@ function ShiftGroup({ title, shifts }: { title: string; shifts: Shift[] }) {
   return (
     <section>
       <h2 className="mb-3 font-display text-xl font-semibold">{title}</h2>
-      <div className="space-y-2">
+      <div className="space-y-4">
         {shifts.map((s) => (
           <Link key={s.id} href={`/shifts/${s.id}`}>
             <Card className="flex items-center justify-between transition-transform hover:scale-[0.995]">

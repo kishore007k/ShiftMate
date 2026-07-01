@@ -9,7 +9,7 @@
   --text-primary: #111111;
   --text-secondary: #6b6b76;
   --border: #e2e2e4;
-  --primary: #ff7a45;
+  --primary: #45ff87;
   --primary-foreground: #ffffff;
   --accent-soft: #fff0eb;
   --success: #2ecc71;
@@ -19,11 +19,11 @@
 .dark {
   --background: #0f0f12;
   --surface: #1c1c22;
-  --surface-elevated: #26262f;
-  --text-primary: #f0f0f0;
+  --surface-elevated: #2d2d3a;
+  --text-primary: #f4eeeb;
   --text-secondary: #9090a8;
   --border: #26262f;
-  --primary: #ff7a45;
+  --primary: #45ff87;
   --primary-foreground: #ffffff;
   --accent-soft: #3d2010;
   --success: #2ecc71;
