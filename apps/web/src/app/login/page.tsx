@@ -2,8 +2,6 @@ import { Card } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
-
 export default function LoginPage() {
   return (
     <div className="mx-auto max-w-sm space-y-6">
@@ -13,13 +11,13 @@ export default function LoginPage() {
       </header>
       <Card className="space-y-3">
         <a
-          href={`${API_BASE}/api/auth/google`}
+          href="/api/auth/google"
           className={cn(buttonVariants({ variant: 'secondary' }), 'w-full')}
         >
           Continue with Google
         </a>
         <a
-          href={`${API_BASE}/api/auth/github`}
+          href="/api/auth/github"
           className={cn(buttonVariants({ variant: 'secondary' }), 'w-full')}
         >
           Continue with GitHub

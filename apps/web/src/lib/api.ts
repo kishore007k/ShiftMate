@@ -1,6 +1,9 @@
 import { getDeviceId } from './device-id';
 
-const BASE = `${process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000'}/api`;
+// Relative — proxied to the real API by next.config.mjs's rewrite. Keeps every
+// request same-origin from the browser's perspective, so the session cookie works
+// on Safari/iOS (which blocks cross-site cookies even with credentials: 'include').
+const BASE = '/api';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {

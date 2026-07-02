@@ -29,10 +29,13 @@ export class AuthService {
     private readonly userRepo: Repository<UserEntity>,
   ) {}
 
-  /** Where the provider should redirect back to after the user approves. */
+  /** Where the provider should redirect back to after the user approves.
+   * This is the web app's own origin, not the API's — the web app proxies /api/*
+   * to this service (see apps/web/next.config.mjs), so the session cookie ends up
+   * first-party to the browser instead of cross-site (Safari/iOS blocks the latter). */
   redirectUri(provider: Provider): string {
-    const apiBase = this.config.get<string>('API_BASE_URL', 'http://localhost:3000');
-    return `${apiBase}/api/auth/${provider}/callback`;
+    const webOrigin = this.config.get<string>('WEB_ORIGIN', 'http://localhost:3001');
+    return `${webOrigin.replace(/\/+$/, '')}/api/auth/${provider}/callback`;
   }
 
   authorizeUrl(provider: Provider, state: string): string {
