@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const ShiftSchema = z.object({
   id: z.string().uuid(),
   deviceId: z.string(),
+  userId: z.string().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Must be HH:MM'),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Must be HH:MM'),

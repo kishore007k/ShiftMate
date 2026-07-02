@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { ShiftEntity } from './shift.entity';
 import { Shift, CreateShiftDto, UpdateShiftDto } from '@shiftmate/types';
 import { SettingsService } from '../settings/settings.service';
+import { AuthContext, partitionWhere } from '../auth/auth-context';
 
 function computeHours(start: string, end: string): number {
   const [sh, sm] = start.split(':').map(Number);
@@ -22,27 +23,28 @@ export class ShiftsService {
     private readonly settingsService: SettingsService,
   ) {}
 
-  async findAll(deviceId: string): Promise<Shift[]> {
+  async findAll(authCtx: AuthContext): Promise<Shift[]> {
     const entities = await this.shiftRepo.find({
-      where: { deviceId },
+      where: partitionWhere(authCtx),
       order: { date: 'DESC', startTime: 'DESC' },
     });
     return entities.map((e) => this.toDto(e));
   }
 
-  async findOne(deviceId: string, id: string): Promise<Shift> {
-    const entity = await this.shiftRepo.findOne({ where: { id, deviceId } });
+  async findOne(authCtx: AuthContext, id: string): Promise<Shift> {
+    const entity = await this.shiftRepo.findOne({ where: { id, ...partitionWhere(authCtx) } });
     if (!entity) throw new NotFoundException(`Shift ${id} not found`);
     return this.toDto(entity);
   }
 
-  async create(deviceId: string, dto: CreateShiftDto): Promise<Shift> {
-    const { hourlyRate } = await this.settingsService.get(deviceId);
+  async create(authCtx: AuthContext, dto: CreateShiftDto): Promise<Shift> {
+    const { hourlyRate } = await this.settingsService.get(authCtx);
     const hoursWorked = computeHours(dto.startTime, dto.endTime);
     const grossPay = Math.round(hoursWorked * hourlyRate * 100) / 100;
 
     const entity = this.shiftRepo.create({
-      deviceId,
+      deviceId: authCtx.deviceId,
+      userId: authCtx.userId,
       date: dto.date,
       startTime: dto.startTime,
       endTime: dto.endTime,
@@ -54,8 +56,8 @@ export class ShiftsService {
     return this.toDto(entity);
   }
 
-  async update(deviceId: string, id: string, dto: UpdateShiftDto): Promise<Shift> {
-    const entity = await this.shiftRepo.findOne({ where: { id, deviceId } });
+  async update(authCtx: AuthContext, id: string, dto: UpdateShiftDto): Promise<Shift> {
+    const entity = await this.shiftRepo.findOne({ where: { id, ...partitionWhere(authCtx) } });
     if (!entity) throw new NotFoundException(`Shift ${id} not found`);
 
     if (dto.date) entity.date = dto.date;
@@ -67,7 +69,7 @@ export class ShiftsService {
     if (dto.startTime || dto.endTime) {
       entity.startTime = startTime;
       entity.endTime = endTime;
-      const { hourlyRate } = await this.settingsService.get(deviceId);
+      const { hourlyRate } = await this.settingsService.get(authCtx);
       entity.hoursWorked = computeHours(startTime, endTime);
       entity.grossPay = Math.round(entity.hoursWorked * hourlyRate * 100) / 100;
     }
@@ -76,16 +78,29 @@ export class ShiftsService {
     return this.toDto(entity);
   }
 
-  async remove(deviceId: string, id: string): Promise<void> {
-    const entity = await this.shiftRepo.findOne({ where: { id, deviceId } });
+  async remove(authCtx: AuthContext, id: string): Promise<void> {
+    const entity = await this.shiftRepo.findOne({ where: { id, ...partitionWhere(authCtx) } });
     if (!entity) throw new NotFoundException(`Shift ${id} not found`);
     await this.shiftRepo.remove(entity);
+  }
+
+  /** Links this device's still-unclaimed shift history to the signed-in user. An explicit,
+   * user-initiated action (unlike settings' auto-claim) — shift history is consequential
+   * enough to ask first. Returns the number of shifts claimed. */
+  async claimForCurrentUser(authCtx: AuthContext): Promise<number> {
+    if (!authCtx.userId) return 0;
+    const result = await this.shiftRepo.update(
+      { deviceId: authCtx.deviceId, userId: IsNull() },
+      { userId: authCtx.userId },
+    );
+    return result.affected ?? 0;
   }
 
   private toDto(entity: ShiftEntity): Shift {
     return {
       id: entity.id,
       deviceId: entity.deviceId,
+      userId: entity.userId,
       date: entity.date,
       startTime: entity.startTime,
       endTime: entity.endTime,

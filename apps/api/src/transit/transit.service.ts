@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { BusDeparture } from '@shiftmate/types';
 import { SettingsService } from '../settings/settings.service';
 import { ShiftsService } from '../shifts/shifts.service';
+import { AuthContext } from '../auth/auth-context';
 
 const DIRECTIONS_URL = 'https://maps.googleapis.com/maps/api/directions/json';
 
@@ -18,7 +19,7 @@ export class TransitService {
     private readonly shiftsService: ShiftsService,
   ) {}
 
-  async getDepartures(deviceId: string): Promise<BusDeparture[]> {
+  async getDepartures(authCtx: AuthContext): Promise<BusDeparture[]> {
     const apiKey = this.config.get<string>('GOOGLE_MAPS_API_KEY');
     if (!apiKey) {
       throw new ServiceUnavailableException(
@@ -26,7 +27,7 @@ export class TransitService {
       );
     }
 
-    const settings = await this.settingsService.get(deviceId);
+    const settings = await this.settingsService.get(authCtx);
     if (!settings.homeAddress) {
       throw new BadRequestException('Set your home address in settings to see transit options.');
     }
@@ -39,7 +40,7 @@ export class TransitService {
       alternatives: 'true',
       key: apiKey,
     });
-    const arrival = await this.nextShiftArrivalUnix(deviceId);
+    const arrival = await this.nextShiftArrivalUnix(authCtx);
     if (arrival) params.set('arrival_time', String(arrival));
 
     const res = await fetch(`${DIRECTIONS_URL}?${params.toString()}`);
@@ -53,8 +54,8 @@ export class TransitService {
   }
 
   /** Unix seconds of the next upcoming shift's start, or null if none. */
-  private async nextShiftArrivalUnix(deviceId: string): Promise<number | null> {
-    const shifts = await this.shiftsService.findAll(deviceId);
+  private async nextShiftArrivalUnix(authCtx: AuthContext): Promise<number | null> {
+    const shifts = await this.shiftsService.findAll(authCtx);
     const now = Date.now();
     const upcoming = shifts
       .map((s) => melbourneUnixMs(s.date, s.startTime))

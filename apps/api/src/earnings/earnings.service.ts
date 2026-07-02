@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Shift, UserSettings, FortnightSummary, DashboardData } from '@shiftmate/types';
 import { ShiftsService } from '../shifts/shifts.service';
 import { SettingsService } from '../settings/settings.service';
+import { AuthContext } from '../auth/auth-context';
 import {
   fortnightBounds,
   periodBounds,
@@ -24,17 +25,17 @@ export class EarningsService {
     return new Date().toISOString().slice(0, 10);
   }
 
-  async currentFortnight(deviceId: string): Promise<FortnightSummary> {
-    const settings = await this.settingsService.get(deviceId);
-    const shifts = await this.shiftsService.findAll(deviceId);
+  async currentFortnight(authCtx: AuthContext): Promise<FortnightSummary> {
+    const settings = await this.settingsService.get(authCtx);
+    const shifts = await this.shiftsService.findAll(authCtx);
     const { start, end } = fortnightBounds(settings.fortnightStart, this.today());
     return summarizeFortnight(shifts, start, end, settings);
   }
 
   /** Past fortnights (most recent first) that contain at least one shift. */
-  async history(deviceId: string): Promise<FortnightSummary[]> {
-    const settings = await this.settingsService.get(deviceId);
-    const shifts = await this.shiftsService.findAll(deviceId);
+  async history(authCtx: AuthContext): Promise<FortnightSummary[]> {
+    const settings = await this.settingsService.get(authCtx);
+    const shifts = await this.shiftsService.findAll(authCtx);
     if (shifts.length === 0) return [];
 
     // Walk fortnight periods from the current one back to the earliest shift.
@@ -50,9 +51,9 @@ export class EarningsService {
     return summaries;
   }
 
-  async dashboard(deviceId: string): Promise<DashboardData> {
-    const settings = await this.settingsService.get(deviceId);
-    const shifts = await this.shiftsService.findAll(deviceId);
+  async dashboard(authCtx: AuthContext): Promise<DashboardData> {
+    const settings = await this.settingsService.get(authCtx);
+    const shifts = await this.shiftsService.findAll(authCtx);
     const today = this.today();
 
     const fortnightlyEarnings = this.recentPeriods(shifts, settings, today, 14, 6)

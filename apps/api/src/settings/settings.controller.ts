@@ -1,8 +1,10 @@
-import { Controller, Get, Patch, Body, Headers } from '@nestjs/common';
+import { Controller, Get, Patch, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse, ApiBody } from '@nestjs/swagger';
 import { SettingsService } from './settings.service';
 import { UserSettings } from '@shiftmate/types';
 import { userSettingsSchema } from '../swagger';
+import { CurrentAuthContext } from '../auth/auth-context.decorator';
+import { AuthContext } from '../auth/auth-context';
 
 @ApiTags('settings')
 @Controller('settings')
@@ -12,8 +14,8 @@ export class SettingsController {
   @Get()
   @ApiOperation({ summary: 'Get device settings (defaults if none saved yet)' })
   @ApiOkResponse({ schema: userSettingsSchema })
-  get(@Headers('x-device-id') deviceId: string): Promise<UserSettings> {
-    return this.settingsService.get(deviceId ?? '');
+  get(@CurrentAuthContext() authCtx: AuthContext): Promise<UserSettings> {
+    return this.settingsService.get(authCtx);
   }
 
   @Patch()
@@ -21,9 +23,9 @@ export class SettingsController {
   @ApiBody({ schema: userSettingsSchema })
   @ApiOkResponse({ schema: userSettingsSchema })
   patch(
-    @Headers('x-device-id') deviceId: string,
+    @CurrentAuthContext() authCtx: AuthContext,
     @Body() body: Partial<UserSettings>,
   ): Promise<UserSettings> {
-    return this.settingsService.patch(deviceId ?? '', body);
+    return this.settingsService.patch(authCtx, body);
   }
 }

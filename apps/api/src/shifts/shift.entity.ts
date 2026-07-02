@@ -9,12 +9,16 @@ import {
 
 @Entity('shifts')
 @Index(['deviceId', 'date'])
+@Index(['userId', 'date'])
 export class ShiftEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Column({ name: 'device_id', type: 'text' })
   deviceId!: string;
+
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
+  userId?: string;
 
   @Column({ type: 'date' })
   date!: string;

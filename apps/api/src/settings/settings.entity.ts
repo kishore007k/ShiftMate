@@ -1,9 +1,15 @@
-import { Entity, PrimaryColumn, Column, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, UpdateDateColumn } from 'typeorm';
 
 @Entity('user_settings')
 export class SettingsEntity {
-  @PrimaryColumn({ name: 'device_id', type: 'text' })
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
+
+  @Column({ name: 'device_id', type: 'text', unique: true })
   deviceId!: string;
+
+  @Column({ name: 'user_id', type: 'uuid', nullable: true, unique: true })
+  userId?: string;
 
   @Column({ name: 'hourly_rate', type: 'numeric', precision: 8, scale: 2 })
   hourlyRate!: number;

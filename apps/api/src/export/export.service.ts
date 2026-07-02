@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Shift } from '@shiftmate/types';
 import { ShiftsService } from '../shifts/shifts.service';
+import { AuthContext } from '../auth/auth-context';
 
 @Injectable()
 export class ExportService {
   constructor(private readonly shiftsService: ShiftsService) {}
 
-  async shiftsCsv(deviceId: string): Promise<string> {
-    const shifts = await this.shiftsService.findAll(deviceId);
+  async shiftsCsv(authCtx: AuthContext): Promise<string> {
+    const shifts = await this.shiftsService.findAll(authCtx);
     return shiftsToCsv(shifts);
   }
 }

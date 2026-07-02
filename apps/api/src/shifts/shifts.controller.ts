@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Headers, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, HttpCode } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -11,6 +11,8 @@ import {
 import { ShiftsService } from './shifts.service';
 import { Shift, CreateShiftDto, UpdateShiftDto } from '@shiftmate/types';
 import { shiftSchema, createShiftSchema, updateShiftSchema } from '../swagger';
+import { CurrentAuthContext } from '../auth/auth-context.decorator';
+import { AuthContext } from '../auth/auth-context';
 
 @ApiTags('shifts')
 @Controller('shifts')
@@ -20,24 +22,27 @@ export class ShiftsController {
   @Get()
   @ApiOperation({ summary: 'List all shifts (newest first)' })
   @ApiOkResponse({ schema: { type: 'array', items: shiftSchema } })
-  findAll(@Headers('x-device-id') deviceId: string): Promise<Shift[]> {
-    return this.shiftsService.findAll(deviceId ?? '');
+  findAll(@CurrentAuthContext() authCtx: AuthContext): Promise<Shift[]> {
+    return this.shiftsService.findAll(authCtx);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a shift by id' })
   @ApiOkResponse({ schema: shiftSchema })
   @ApiNotFoundResponse({ description: 'Shift not found for this device' })
-  findOne(@Headers('x-device-id') deviceId: string, @Param('id') id: string): Promise<Shift> {
-    return this.shiftsService.findOne(deviceId ?? '', id);
+  findOne(@CurrentAuthContext() authCtx: AuthContext, @Param('id') id: string): Promise<Shift> {
+    return this.shiftsService.findOne(authCtx, id);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create a shift (hours & gross pay are computed server-side)' })
   @ApiBody({ schema: createShiftSchema })
   @ApiCreatedResponse({ schema: shiftSchema })
-  create(@Headers('x-device-id') deviceId: string, @Body() body: CreateShiftDto): Promise<Shift> {
-    return this.shiftsService.create(deviceId ?? '', body);
+  create(
+    @CurrentAuthContext() authCtx: AuthContext,
+    @Body() body: CreateShiftDto,
+  ): Promise<Shift> {
+    return this.shiftsService.create(authCtx, body);
   }
 
   @Patch(':id')
@@ -46,11 +51,11 @@ export class ShiftsController {
   @ApiOkResponse({ schema: shiftSchema })
   @ApiNotFoundResponse({ description: 'Shift not found for this device' })
   update(
-    @Headers('x-device-id') deviceId: string,
+    @CurrentAuthContext() authCtx: AuthContext,
     @Param('id') id: string,
     @Body() body: UpdateShiftDto,
   ): Promise<Shift> {
-    return this.shiftsService.update(deviceId ?? '', id, body);
+    return this.shiftsService.update(authCtx, id, body);
   }
 
   @Delete(':id')
@@ -58,7 +63,7 @@ export class ShiftsController {
   @ApiOperation({ summary: 'Delete a shift' })
   @ApiNoContentResponse({ description: 'Shift deleted' })
   @ApiNotFoundResponse({ description: 'Shift not found for this device' })
-  remove(@Headers('x-device-id') deviceId: string, @Param('id') id: string): Promise<void> {
-    return this.shiftsService.remove(deviceId ?? '', id);
+  remove(@CurrentAuthContext() authCtx: AuthContext, @Param('id') id: string): Promise<void> {
+    return this.shiftsService.remove(authCtx, id);
   }
 }

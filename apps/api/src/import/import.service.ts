@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateShiftDto } from '@shiftmate/types';
 import { ShiftsService } from '../shifts/shifts.service';
+import { AuthContext } from '../auth/auth-context';
 
 export interface ImportResult {
   imported: number;
@@ -12,10 +13,10 @@ export interface ImportResult {
 export class ImportService {
   constructor(private readonly shiftsService: ShiftsService) {}
 
-  async importCsv(deviceId: string, text: string): Promise<ImportResult> {
+  async importCsv(authCtx: AuthContext, text: string): Promise<ImportResult> {
     const { rows, errors } = parseImportCsv(text);
 
-    const existing = await this.shiftsService.findAll(deviceId);
+    const existing = await this.shiftsService.findAll(authCtx);
     const seen = new Set(existing.map((s) => key(s.date, s.startTime, s.endTime)));
 
     let imported = 0;
@@ -26,7 +27,7 @@ export class ImportService {
         conflicts++;
         continue;
       }
-      await this.shiftsService.create(deviceId, row);
+      await this.shiftsService.create(authCtx, row);
       seen.add(k);
       imported++;
     }

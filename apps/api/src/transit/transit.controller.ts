@@ -1,4 +1,4 @@
-import { Controller, Get, Headers } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,6 +9,8 @@ import {
 import { TransitService } from './transit.service';
 import { BusDeparture } from '@shiftmate/types';
 import { busDepartureSchema } from '../swagger';
+import { CurrentAuthContext } from '../auth/auth-context.decorator';
+import { AuthContext } from '../auth/auth-context';
 
 @ApiTags('transit')
 @Controller('transit')
@@ -20,7 +22,7 @@ export class TransitController {
   @ApiOkResponse({ schema: { type: 'array', items: busDepartureSchema } })
   @ApiBadRequestResponse({ description: 'Home address not set in settings' })
   @ApiServiceUnavailableResponse({ description: 'GOOGLE_MAPS_API_KEY not configured on the server' })
-  departures(@Headers('x-device-id') deviceId: string): Promise<BusDeparture[]> {
-    return this.transitService.getDepartures(deviceId ?? '');
+  departures(@CurrentAuthContext() authCtx: AuthContext): Promise<BusDeparture[]> {
+    return this.transitService.getDepartures(authCtx);
   }
 }
