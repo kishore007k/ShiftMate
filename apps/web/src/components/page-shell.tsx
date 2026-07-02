@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from './auth-provider';
+import { MergePrompt } from './merge-prompt';
 
 const NAV = [
   { href: '/', label: 'Home' },
@@ -20,6 +22,7 @@ function isActive(pathname: string, href: string): boolean {
 
 export function PageShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, loading, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,12 +51,32 @@ export function PageShell({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
           </div>
-          <button
-            aria-label="Notifications"
-            className="grid h-10 w-10 place-items-center rounded-full text-muted hover:bg-surface-elevated hover:text-foreground"
-          >
-            <Bell className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {!loading &&
+              (user ? (
+                <button
+                  onClick={logout}
+                  title="Sign out"
+                  className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-foreground"
+                >
+                  <span className="hidden sm:inline">{user.name}</span>
+                  <LogOut className="h-4 w-4" />
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="rounded-full px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-foreground"
+                >
+                  Sign in
+                </Link>
+              ))}
+            <button
+              aria-label="Notifications"
+              className="grid h-10 w-10 place-items-center rounded-full text-muted hover:bg-surface-elevated hover:text-foreground"
+            >
+              <Bell className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -76,7 +99,10 @@ export function PageShell({ children }: { children: React.ReactNode }) {
         ))}
       </nav>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <MergePrompt />
+        {children}
+      </main>
     </div>
   );
 }

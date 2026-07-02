@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from 'next/font/google';
 import { PageShell } from '@/components/page-shell';
+import { AuthProvider } from '@/components/auth-provider';
 import './globals.css';
 
 const display = Plus_Jakarta_Sans({
@@ -24,7 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`dark ${display.variable} ${sans.variable} ${mono.variable}`}>
       <body className="font-sans antialiased">
-        <PageShell>{children}</PageShell>
+        <AuthProvider>
+          <PageShell>{children}</PageShell>
+        </AuthProvider>
       </body>
     </html>
   );

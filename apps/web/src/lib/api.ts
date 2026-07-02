@@ -12,6 +12,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
+    credentials: 'include', // send the session cookie cross-origin
     headers: {
       'Content-Type': 'application/json',
       'x-device-id': getDeviceId(),
@@ -30,6 +31,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 /** Fetch a file (with the device header) and trigger a browser download. */
 export async function downloadFile(path: string, filename: string): Promise<void> {
   const res = await fetch(`${BASE}${path}`, {
+    credentials: 'include',
     headers: { 'x-device-id': getDeviceId() },
   });
   if (!res.ok) throw new ApiError(res.status, await res.text());
