@@ -1,4 +1,11 @@
-import { shiftsToCsv, shiftsToTimesheet, auDate, weekdayName, time12 } from './export.service';
+import {
+  shiftsToCsv,
+  shiftsToTimesheet,
+  shiftsToTimesheetCsv,
+  auDate,
+  weekdayName,
+  time12,
+} from './export.service';
 import { Shift } from '@shiftmate/types';
 
 function shift(over: Partial<Shift>): Shift {
@@ -73,6 +80,38 @@ describe('shiftsToTimesheet', () => {
 
   it('returns an empty string for no shifts', () => {
     expect(shiftsToTimesheet([])).toBe('');
+  });
+});
+
+describe('shiftsToTimesheetCsv', () => {
+  it('adds a quoted Hours formula per row and a total row', () => {
+    const csv = shiftsToTimesheetCsv([
+      shift({ date: '2026-06-25', startTime: '16:30', endTime: '22:00' }),
+      shift({ date: '2026-06-22', startTime: '17:00', endTime: '22:00' }),
+    ]);
+    expect(csv.split('\r\n')).toEqual([
+      '22/06/2026,Monday,5:00 pm,10:00 pm,"=MOD(D1-C1,1)*24"',
+      '25/06/2026,Thursday,4:30 pm,10:00 pm,"=MOD(D2-C2,1)*24"',
+      ',,,Total Hours,=SUM(E1:E2)',
+    ]);
+  });
+
+  it('numbers formula rows chronologically regardless of input order', () => {
+    const csv = shiftsToTimesheetCsv([
+      shift({ date: '2026-07-04' }),
+      shift({ date: '2026-07-02' }),
+      shift({ date: '2026-07-03' }),
+    ]);
+    const rows = csv.split('\r\n');
+    expect(rows[0]).toContain('02/07/2026');
+    expect(rows[0]).toContain('D1-C1');
+    expect(rows[2]).toContain('04/07/2026');
+    expect(rows[2]).toContain('D3-C3');
+    expect(rows[3]).toBe(',,,Total Hours,=SUM(E1:E3)');
+  });
+
+  it('returns an empty string (no total row) for no shifts', () => {
+    expect(shiftsToTimesheetCsv([])).toBe('');
   });
 });
 
