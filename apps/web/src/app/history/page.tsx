@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { StatCard } from '@/components/stat-card';
 import { EarningsBreakdown } from '@/components/earnings-breakdown';
 import { ExportButton } from '@/components/export-button';
+import { TimesheetActions } from '@/components/timesheet-actions';
 
 export default function HistoryPage() {
   const [history, setHistory] = useState<FortnightSummary[] | null>(null);
@@ -141,6 +142,7 @@ function FortnightCard({ fortnight, shifts }: { fortnight: FortnightSummary; shi
       {open && (
         <div className="space-y-4 border-t border-border p-5">
           <EarningsBreakdown summary={fortnight} />
+          <TimesheetActions start={fortnight.start} end={fortnight.end} />
           {sorted.length > 0 && (
             <div className="space-y-1.5">
               {sorted.map((s) => (

@@ -31,6 +31,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/** Fetch a plain-text endpoint (with the device header) and return the body as a string. */
+export async function fetchText(path: string): Promise<string> {
+  const res = await fetch(`${BASE}${path}`, {
+    credentials: 'include',
+    headers: { 'x-device-id': getDeviceId() },
+  });
+  if (!res.ok) throw new ApiError(res.status, await res.text());
+  return res.text();
+}
+
 /** Fetch a file (with the device header) and trigger a browser download. */
 export async function downloadFile(path: string, filename: string): Promise<void> {
   const res = await fetch(`${BASE}${path}`, {
